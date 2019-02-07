@@ -7,28 +7,28 @@ $dbPassword = "";
 $ApmHandler = new PDO("mysql:host=$dbHost;dbname=$dbName;charset=utf8", $dbUser, $dbPassword);
 
 class Apm{
-
 	protected $table="";
 	protected $whrX="";
+	protected $innerjoin = "";
 	protected $whrV=[];
-
 	protected $currentId;
 	protected $data;
-
-	public function __construct($table, $whr=false){
+	public function __construct($table, $whr=false, $innerjoin=[]){
 		$this->table = $table;
 		$this->currentId = 0;
 		$this->whr($whr);
+		if(count($innerjoin)==2)$this->innerjoin = "INNER JOIN ".$innerjoin[0]." ON ".$innerjoin[1];
 	}
-
 	public function setTable($table) {
 		$this->table = $table;
 	}
-
+	public function setInnerJoin($innerjoin=[]) {
+		$this->innerjoin = "";
+		if(count($innerjoin)==2)$this->innerjoin = "INNER JOIN ".$innerjoin[0]." ON ".$innerjoin[1];
+	}
 	public function getData() {
 		return $this->data;
 	}
-
 	public function insert($array,$hasId=true) {
 		global $ApmHandler;
 		$valsX = [];
@@ -47,7 +47,6 @@ class Apm{
 		return $rq->execute($valsV) or die(print_r($rq->errorInfo()));
 		
 	}
-
 	private function parseFromArray($array, $word="WHERE", $sep="AND") { 
 		$add = "";
 		$rt = $word;
@@ -59,12 +58,10 @@ class Apm{
 		}
 		return array("result"=>$rt, "values"=>$vals);
 	}
-
 	public function customWhere($string, $values) {
 		$this->whrX="WHERE ".$string;
 		$this->whrV=$values;
 	}
-
 	public function whr($whereArray) {
 		if($whereArray) {
 			$r = $this->parseFromArray($whereArray);
@@ -76,7 +73,6 @@ class Apm{
 			$this->whrX = "";
 		}
 	}
-
 	public function customQuery($query, $arr=false) {
 		global $ApmHandler;
 		$rq = $ApmHandler->prepare($query);
@@ -89,13 +85,12 @@ class Apm{
 		}
 		return $rq;
 	}
-
 	public function get($whr=false, $type="multiple") { 
 		global $ApmHandler;
 		if($whr) {
 			$this->whr($whr);
 		}
-		$rq = $ApmHandler->prepare("SELECT * FROM ".$this->table." ".$this->whrX);
+		$rq = $ApmHandler->prepare("SELECT * FROM ".$this->table." ".$this->innerjoin." ".$this->whrX);
 		if($this->whrX!='') { 
 			$rq->execute($this->whrV) or print_r($rq->errorInfo());
 		}
@@ -153,23 +148,18 @@ class Apm{
 			break;
 		}
 	}
-
 	public function one($whr=false) {
 		return $this->get($whr, "single");
 	}
-
 	public function id($whr=false) {
 		return $this->get($whr, "id");
 	}
-
 	public function exists($whr=false) {
 		return $this->get($whr, "exists");
 	}
-
 	public function count($whr=false) {
 		return $this->get($whr, "count");
 	}
-
 	public function attr($attr, $newVal="APM_DEFAULT_VALUE_1208#--__--") {
 		if($this->currentId) {
 			if($newVal == "APM_DEFAULT_VALUE_1208#--__--") {
@@ -196,19 +186,16 @@ class Apm{
 			exit;
 		}
 	}
-
 	public function update($set, $whr=false) {
 		global $ApmHandler;
 		if($whr) {
 			$this->whr($whr);
 		}
-
 		$set = $this->parseFromArray($set, "SET", ",");
 		$rq = $ApmHandler->prepare("UPDATE ".$this->table." ".$set['result']." ".$this->whrX);
 		$rq->execute(array_merge($set['values'], $this->whrV));
 		return true;
 	}
-
 	public function delete($whr=false) {
 		global $ApmHandler;
 		if($whr) {
@@ -222,7 +209,6 @@ class Apm{
 		{
 			$rq->execute();
 		}
-
 		if($this->currentId!=0) {
 			$this->currentId=0;
 			$this->data = null;

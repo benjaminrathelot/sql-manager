@@ -1,5 +1,5 @@
 <?php
-// PDO Manager - APM (c) 2017 Benjamin Rathelot
+// PDO Manager - APM (c) 2017 - 2019 Benjamin Rathelot
 $dbHost ="";
 $dbUser = "";
 $dbPassword = "";
@@ -10,14 +10,17 @@ class Apm{
 	protected $table="";
 	protected $whrX="";
 	protected $innerjoin = "";
+	protected $select="*";
 	protected $whrV=[];
 	protected $currentId;
 	protected $data;
-	public function __construct($table, $whr=false, $innerjoin=[]){
+	public function __construct($table, $whr=false, $innerjoin=[], $select="*"){
 		$this->table = $table;
 		$this->currentId = 0;
+		$this->select = $select;
 		$this->whr($whr);
 		if(count($innerjoin)==2)$this->innerjoin = "INNER JOIN ".$innerjoin[0]." ON ".$innerjoin[1];
+		if(count($innerjoin)==4)$this->innerjoin = "INNER JOIN ".$innerjoin[0]." ON ".$innerjoin[1]." INNER JOIN ".$innerjoin[2]." ON ".$innerjoin[3];
 	}
 	public function setTable($table) {
 		$this->table = $table;
@@ -25,7 +28,12 @@ class Apm{
 	public function setInnerJoin($innerjoin=[]) {
 		$this->innerjoin = "";
 		if(count($innerjoin)==2)$this->innerjoin = "INNER JOIN ".$innerjoin[0]." ON ".$innerjoin[1];
+		if(count($innerjoin)==4)$this->innerjoin = "INNER JOIN ".$innerjoin[0]." ON ".$innerjoin[1]." INNER JOIN ".$innerjoin[2]." ON ".$innerjoin[3];
 	}
+	public function setSelect($s) {
+		$this->select = $s;
+	}
+
 	public function getData() {
 		return $this->data;
 	}
@@ -90,7 +98,7 @@ class Apm{
 		if($whr) {
 			$this->whr($whr);
 		}
-		$rq = $ApmHandler->prepare("SELECT * FROM ".$this->table." ".$this->innerjoin." ".$this->whrX);
+		$rq = $ApmHandler->prepare("SELECT ".$this->select." FROM ".$this->table." ".$this->innerjoin." ".$this->whrX);
 		if($this->whrX!='') { 
 			$rq->execute($this->whrV) or print_r($rq->errorInfo());
 		}
@@ -216,3 +224,4 @@ class Apm{
 		return true;
 	}
 }
+
